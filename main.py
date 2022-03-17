@@ -1,29 +1,35 @@
+import threading
+
 from preprocess import *
 import os
 
 
+def worker(bin_file, batch, data_path):
+    D = data(bin_file)
+    print('Process batch : %d' % b_idx)
+
+    if os.path.exists(D.bin_file):
+        with open(D.bin_file, 'rb') as f:
+            D = pickle.load(f)
+            D.bin_file = bin_file
+    else:
+        D.read_data(batch, data_path)
+        D.save_data()
+        D.produce_minidata()
+        del D
+
 
 file = './data/processed/batch4.data'
-if os.path.exists(file):
+if not os.path.exists(file):
 
     for b_idx in range(1, 5):
 
         bin_file = './data/processed/batch%d.data' % b_idx
         batch = 'b%d' % b_idx
         data_path = r'./data/raw/batch%d' % b_idx
-        D = data(bin_file)
-        print('Process batch : %d' % b_idx)
-
-        if os.path.exists(D.bin_file):
-            with open(D.bin_file, 'rb') as f:
-                D = pickle.load(f)
-                D.bin_file = bin_file
-        else:
-            D.read_data(batch, data_path)
-            D.save_data()
-            D.produce_minidata()
-            del D
-
+        worker(bin_file, batch, data_path)
+        break
+#%%
 bin_file = './data/processed/total.data_Mini'
 D = data(bin_file)
 if not os.path.exists(D.bin_file):
@@ -59,7 +65,7 @@ else:
         D = pickle.load(f)
 
 
-
+#%%
 
 # The index we use
 train_index, test_index = index_split(D.caps)

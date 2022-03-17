@@ -1,0 +1,6 @@
+scipy
+numpy
+xlrd
+xlwt
+openpyxl
+pandas

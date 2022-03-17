@@ -1,3 +1,5 @@
+from multiprocessing import Pool, Semaphore, Process
+
 import numpy as np
 import pandas as pd
 import pickle
@@ -112,7 +114,7 @@ class capacitor:
                                                    'current(mA)',
                                                    'capacity(mAh)',
                                                    'energy(mWh)']
-                    print(sheet_idx)
+                    # print(sheet_idx)
                     sheet_idx += 1
                 except:
                     break
@@ -365,12 +367,27 @@ class data:
         files = os.listdir(path)
         files = [file for file in files if '__' not in file]
         files.sort(key=lambda x: int(x[:-4]))
-        for i, file in enumerate(files):
-            print(file)
-            cap = capacitor(path+'/'+file, batch, i+1)
+        concurrency = os.cpu_count()-1
+        sema = Semaphore(concurrency)
+        all_processes = []
 
+        def read_one_file(i, file):
+            print(file)
+
+            cap = capacitor(path + '/' + file, batch, i + 1)
 
             self.caps.append(cap)
+            sema.release()
+
+        for row in enumerate(files):
+            p = Process(target=read_one_file, args=row)
+            sema.acquire()
+            all_processes.append(p)
+            p.start()
+        for p in all_processes:
+            p.join()
+            print(self.caps)
+
 
 
     def save_data(self):
