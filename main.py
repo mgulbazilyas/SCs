@@ -28,7 +28,7 @@ if not os.path.exists(file):
         batch = 'b%d' % b_idx
         data_path = r'./data/raw/batch%d' % b_idx
         worker(bin_file, batch, data_path)
-        break
+exit()
 #%%
 bin_file = './data/processed/total.data_Mini'
 D = data(bin_file)

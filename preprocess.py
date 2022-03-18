@@ -1,4 +1,4 @@
-from multiprocessing import Pool, Semaphore, Process
+from multiprocessing import Pool, Semaphore, Process, Manager
 
 import numpy as np
 import pandas as pd
@@ -362,32 +362,30 @@ class data:
 
         self.bin_file = file
 
-
     def read_data(self, batch, path):
         files = os.listdir(path)
         files = [file for file in files if '__' not in file]
         files.sort(key=lambda x: int(x[:-4]))
-        concurrency = os.cpu_count()-1
-        sema = Semaphore(concurrency)
-        all_processes = []
+        concurrency = os.cpu_count()-0
+        with Manager() as manager:
+            L = manager.list()
+            sema = Semaphore(concurrency)
+            all_processes = []
 
-        def read_one_file(i, file):
-            print(file)
+            def read_one_file(i, file):
+                print(file)
+                cap = capacitor(path + '/' + file, batch, i + 1)
+                L.append(cap)
+                sema.release()
 
-            cap = capacitor(path + '/' + file, batch, i + 1)
-
-            self.caps.append(cap)
-            sema.release()
-
-        for row in enumerate(files):
-            p = Process(target=read_one_file, args=row)
-            sema.acquire()
-            all_processes.append(p)
-            p.start()
-        for p in all_processes:
-            p.join()
-            print(self.caps)
-
+            for row in enumerate(files[:]):
+                sema.acquire()
+                p = Process(target=read_one_file, args=row)
+                all_processes.append(p)
+                p.start()
+            for p in all_processes:
+                p.join()
+            self.caps = list(L)
 
 
     def save_data(self):
