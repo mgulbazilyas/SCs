@@ -13,13 +13,14 @@ def worker(bin_file, batch, data_path):
             D = pickle.load(f)
             D.bin_file = bin_file
     else:
+
         D.read_data(batch, data_path)
         D.save_data()
         D.produce_minidata()
         del D
 
 
-file = './data/processed/batch3.data'
+file = './data/processed/total.data_Mini'
 if not os.path.exists(file):
 
     for b_idx in range(1, 5):
@@ -54,6 +55,7 @@ if not os.path.exists(D.bin_file):
     del D3
     with open(D4.bin_file, 'rb') as f:
         D4 = pickle.load(f)
+
     for cap in D4.caps:
         D.caps.append(cap)
     del D4
