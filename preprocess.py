@@ -1,3 +1,4 @@
+import multiprocessing
 from multiprocessing import Pool, Semaphore, Process, Manager
 
 import numpy as np
@@ -355,6 +356,12 @@ class capacitor:
         popt, pcov = curve_fit(power_func, N[30:657], C_decay[30:657], maxfev=50000000)
         return popt
 
+def read_one_file(args):
+    i, file, path, batch = args
+    print(file)
+    cap = capacitor(path + '/' + file, batch, i + 1)
+    return cap
+
 class data:
 
     def __init__(self, file):
@@ -366,33 +373,21 @@ class data:
         files = os.listdir(path)
         files = [file for file in files if '__' not in file]
         files.sort(key=lambda x: int(x[:-4]))
-        concurrency = os.cpu_count()-0
-        with Manager() as manager:
-            L = manager.list()
-            sema = Semaphore(concurrency)
-            all_processes = []
+        concurrency = os.cpu_count()-1
 
-            def read_one_file(i, file):
-                print(file)
-                cap = capacitor(path + '/' + file, batch, i + 1)
-                L.append(cap)
-                sema.release()
 
-            for row in enumerate(files[:]):
-                sema.acquire()
-                p = Process(target=read_one_file, args=row)
-                all_processes.append(p)
-                p.start()
-            for p in all_processes:
-                p.join()
-            self.caps = list(L)
+            # L.append(cap)
+            # sema.release()
+        argx = ((*args, path, batch) for args in enumerate(files[:]))
 
+        pool = multiprocessing.Pool(processes=concurrency)
+        results = pool.map(read_one_file, argx)
+        self.caps = list(results)
 
     def save_data(self):
 
         with open(self.bin_file, 'wb') as f:
             pickle.dump(self, f)
-
 
     def produce_minidata(self):
         cycle = 1000
